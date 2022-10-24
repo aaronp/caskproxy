@@ -14,5 +14,6 @@ Check out:
 ```
 sbt fastLinkJS
 
-scala-cli package --js HelloJs.scala -o hello.js
+scala-cli package --js web.scala -o hello.js
+
 ```

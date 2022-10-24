@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>game</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale = 1.0, maximum-scale=1.0, user-scalable=no"/>
+  <link href="{{style}}" rel="stylesheet">
+
+  <script type="text/javascript" src="./target/scala-3.2.0/client-fastopt/main.js"></script>
+</head>
+<body>
+<div id="app-container"></div>
+<script >
+      IndigoGame.launch("app-container", {"width": window.innerWidth.toString(), "height": window.innerHeight.toString()})
+</script>
+</body>
+</html>
