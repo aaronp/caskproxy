@@ -10,8 +10,8 @@ Initially created from:
 scala-cli setup-ide .
 scala-cli export --sbt .
 scala-cli export --mill .
-scala-cli package MyApp.scala
-scala-cli package --docker MyApp.scala
+scala-cli package App.scala
+scala-cli package --docker App.scala
 ```
 
 ##
