@@ -5,10 +5,75 @@
 
 import scalatags.Text.all.*
 import _root_.sttp.client3.quick.*
+import _root_.sttp.client3.*
 
 object App extends cask.MainRoutes {
 
-  @cask.get("/")
+  private def defaultProxyHost = sys.env.get("PROXY").getOrElse {
+    sys.error("proxyHost was not specified as a query parameter and env 'PROXY' is not set")
+  }
+
+  def chomp(ending : String)(str : String) =
+    str match {
+      case _ if str.endsWith(ending) => str.substring(0, str.length - ending.length)
+      case _ => str
+    }
+
+  extension (request: cask.Request)
+    def method = request.exchange.getRequestMethod
+    def isDelete = method.equalToString("delete")
+    def isOption = method.equalToString("option")
+    def isPut = method.equalToString("put")
+    def isPost = method.equalToString("post")
+    def isGet = method.equalToString("get")
+
+    def asRequestUri =
+      val full = request.remainingPathSegments.mkString(proxyHost, "/", "")
+      uri"${full}"
+
+    def requestBody = request.bytes
+
+    def asRequest: Request[String, Any] =
+      val request: Request[String, Any] = method.toString.toLowerCase.trim match {
+        case "get" => quickRequest.get(asRequestUri)
+        case "post" => quickRequest.post(asRequestUri)
+        case "put" => quickRequest.put(asRequestUri)
+        case "delete" => quickRequest.delete(asRequestUri)
+        case "options" => quickRequest.options(asRequestUri)
+        case other => sys.error(s"BUG: unknown method type '${other}'")
+      }
+
+      request.body(request.bytes).headers(request.headers.toMap)
+
+    def proxyHost = chomp("/") {
+      request.queryParams.get("proxyHost") match {
+        case Some(proxyHost) =>
+        case None => defaultProxyHost
+      }
+    }
+
+  def doProxy() = {
+    val got = simpleHttpClient.send(quickRequest.get(uri"http://httpbin.org/ip"))
+    got.toString
+  }
+
+  @cask.get("/test")
+  def test() = {
+    val got = simpleHttpClient.send(quickRequest.get(uri"http://httpbin.org/ip"))
+    got.toString
+  }
+
+  @cask.route("/", methods = Seq("get", "post", "put", "options", "delete"), subpath = true)
+  def onProxyRoute(request: cask.Request) = {
+
+    request.asRequestUri
+
+    println(s"Handling $request")
+    if (request.exchange.getRequestMethod.equalToString("post")) "do_the_login"
+    else "show_the_login_form"
+  }
+
+  @cask.get("/home")
   def index() = cask.Redirect("/ui/index.html")
 
   @cask.get("/game")
@@ -30,12 +95,6 @@ object App extends cask.MainRoutes {
         )
       )
     )
-  }
-
-  @cask.get("/test")
-  def test() = {
-    val got = simpleHttpClient.send(quickRequest.get(uri"http://httpbin.org/ip"))
-    got.toString
   }
 
 
