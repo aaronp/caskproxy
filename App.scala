@@ -11,7 +11,7 @@ object App extends cask.MainRoutes {
   @cask.get("/")
   def index() = cask.Redirect("/ui/index.html")
 
-  @cask.get("/web")
+  @cask.get("/game")
   def webRoute() = cask.Redirect("/web/game.html")
 
   @cask.staticFiles("/ui", headers = Seq("content-type" -> "text/html", "Cache-Control" -> "max-age=31536000"))
