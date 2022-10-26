@@ -1,7 +1,13 @@
 import _root_.sttp.client3.quick.*
+import cask.model.Cookie
 import scalatags.Text.all.*
-import sttp.client3.Request
+import sttp.client3.{Request, Response}
 import sttp.model.Uri
+import sttp.model.headers.CookieWithMeta
+
+/**
+ * The proxy code (functions and helpers) used by ProxyServer
+ */
 
 private def defaultProxyHost = sys.env.get("PROXY").getOrElse {
   sys.error("proxyHost was not specified as a query parameter and env 'PROXY' is not set")
@@ -24,6 +30,23 @@ def chomp(ending: String)(str: String) =
     case _ => str
   }
 
+extension (sttpCookie : Either[String, CookieWithMeta])
+  def asCaskCookie = sttpCookie match {
+    case Right(cookie) => Cookie(cookie.name,
+      cookie.value,
+      domain = cookie.domain.orNull,
+      expires = cookie.expires.orNull,
+      maxAge = cookie.maxAge.map(x => Integer.valueOf(x.toInt)).orNull,
+      path = cookie.path.orNull
+    )
+    case Left(value) => Cookie(value, "")
+  }
+
+extension (sttpResponse: Response[String])
+  def asCaskResponse = {
+    val cookies = sttpResponse.cookies.map(_.asCaskCookie)
+    cask.Response(sttpResponse.body, sttpResponse.code.code, sttpResponse.headers.map(h => (h.name, h.value)), cookies)
+  }
 
 extension (request: cask.Request)
   def method = request.exchange.getRequestMethod

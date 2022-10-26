@@ -4,9 +4,13 @@
 //> using lib "com.softwaremill.sttp.client3::core:3.8.3"
 
 import _root_.sttp.client3.quick.*
+import cask.model.Cookie
 import scalatags.Text.all.*
-import sttp.client3.Request
+import sttp.client3.{Request, Response}
 import sttp.model.Uri
+
+import java.nio.channels.UnresolvedAddressException
+import java.time.Instant
 
 object ProxyServer extends cask.MainRoutes {
 
@@ -14,9 +18,18 @@ object ProxyServer extends cask.MainRoutes {
   def onProxyRoute(request: cask.Request) = {
     val proxyRequest = request.asRequest
     println(s"Sending proxy request:\n$proxyRequest")
-    val got = simpleHttpClient.send(proxyRequest)
-    println(s"Got proxy response:\n$got")
-    got.toString
+    try {
+      val sttpResponse: Response[String] = simpleHttpClient.send(proxyRequest)
+      println(s"Got proxy response:\n$sttpResponse")
+      sttpResponse.asCaskResponse
+    } catch {
+      case e: UnresolvedAddressException =>
+        println(s"Got unresolved address for ${proxyRequest}")
+        cask.Response(s"UnresolvedAddress for $proxyRequest:\n ${e}\n${e.getStackTrace.mkString("\n")}", 500)
+      case other =>
+        other.printStackTrace()
+        cask.Response(s"Bang: ${other}\n${other.getStackTrace.mkString("\n")}", 500)
+    }
   }
 
   override def host: String = "0.0.0.0"
@@ -24,6 +37,7 @@ object ProxyServer extends cask.MainRoutes {
   override def port = sys.env.get("PORT").map(_.toInt).getOrElse(8070)
 
   initialize()
+
   println(box(
     s""" 🚀 browse to localhost:$port and/or open jconsole 🚀
        |      host : $host
